@@ -315,8 +315,8 @@ function load()
         center: latlng,
         disableDefaultUI: true,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
-        scrollwheel: false,
-        zoom: 17,
+        scrollwheel: true,
+        zoom: 13,
         zoomControl: true
     });
 
@@ -328,7 +328,7 @@ function load()
     });
 
     // embed 3D Earth in DOM
-    google.earth.createInstance("earth", initCB, failureCB);
+    //google.earth.createInstance("earth", initCB, failureCB);
 }
 
 /**

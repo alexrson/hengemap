@@ -144,10 +144,10 @@ body
 
 #map
 {
-    bottom: 0;
-    height: 320px;
+    top: 150px;
+    height: 480px;
     position: absolute;
-    width: 320px;
+    width: 640px;
 }
 
 #right
