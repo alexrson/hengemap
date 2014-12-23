@@ -171,22 +171,22 @@ function frameend()
 /**
  * Called once Google Earth has loaded.
  */
-function initCB(instance) 
+function initCB() //instance) 
 {
     // retain reference to GEPlugin instance
-    earth = instance;
+    //earth = instance;
 
     // specify the speed at which the camera moves
-    earth.getOptions().setFlyToSpeed(100);
+    //earth.getOptions().setFlyToSpeed(100);
 
     // show buildings
-    earth.getLayerRoot().enableLayerById(earth.LAYER_BUILDINGS, true);
+    //earth.getLayerRoot().enableLayerById(earth.LAYER_BUILDINGS, true);
 
     // disable terrain (so that Earth is flat)
-    earth.getLayerRoot().enableLayerById(earth.LAYER_TERRAIN, false);
+    //earth.getLayerRoot().enableLayerById(earth.LAYER_TERRAIN, false);
 
     // prevent mouse navigation in the plugin
-    earth.getOptions().setMouseNavigationEnabled(false);
+    //earth.getOptions().setMouseNavigationEnabled(false);
 
     // instantiate shuttle
     shuttle = new Shuttle({
@@ -200,16 +200,16 @@ function initCB(instance)
     });
 
     // synchronize camera with Earth
-    google.earth.addEventListener(earth, "frameend", frameend);
+    //google.earth.addEventListener(earth, "frameend", frameend);
 
     // synchronize map with Earth
-    google.earth.addEventListener(earth.getView(), "viewchange", viewchange);
+    //google.earth.addEventListener(earth.getView(), "viewchange", viewchange);
 
     // update shuttle's camera
-    shuttle.updateCamera();
+    //shuttle.updateCamera();
 
     // show Earth
-    earth.getWindow().setVisibility(true);
+    //earth.getWindow().setVisibility(true);
 
     // render seating chart
     chart();
@@ -329,6 +329,7 @@ function load()
 
     // embed 3D Earth in DOM
     //google.earth.createInstance("earth", initCB, failureCB);
+    initCB();
 }
 
 /**
@@ -421,11 +422,12 @@ function populate()
         var building = BUILDINGS[Math.floor(Math.random() * BUILDINGS.length)];
 
         // prepare placemark
-        var placemark = earth.createPlacemark("");
-        placemark.setName(PASSENGERS[i].name + " to " + PASSENGERS[i].house);
+        //var placemark = earth.createPlacemark("");
+        //placemark.setName(PASSENGERS[i].name + " to " + PASSENGERS[i].house);
 
         // prepare icon
-        var icon = earth.createIcon("");
+        /*
+        //var icon = earth.createIcon("");
         icon.setHref(url + "/img/" + PASSENGERS[i].username + ".jpg");
 
         // prepare style
@@ -454,6 +456,7 @@ function populate()
         // add placemark to Earth
         earth.getFeatures().appendChild(placemark);
 
+        */
         // add marker to map
         var marker = new google.maps.Marker({
             icon: "https://maps.gstatic.com/intl/en_us/mapfiles/ms/micons/man.png",
@@ -463,7 +466,7 @@ function populate()
         });
 
         PASSENGERS[i]["marker"] = marker;
-        PASSENGERS[i]["placemark"] = placemark;
+        //PASSENGERS[i]["placemark"] = placemark;
         
     }
 }
