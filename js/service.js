@@ -400,75 +400,18 @@ function pickup()
  */
 function populate()
 {
-    // mark houses
-    for (var house in HOUSES)
+    // mark henges
+    for (var henge in HENGE_STARTS)
     {
-        // plant house on map
+        // plant henge on map
         new google.maps.Marker({
-            icon: "https://google-maps-icons.googlecode.com/files/home.png",
+            icon: "img/megalith.png",
             map: map,
-            position: new google.maps.LatLng(HOUSES[house].lat, HOUSES[house].lng),
-            title: house
+            position: new google.maps.LatLng(HENGE_STARTS[henge].lat, HENGE_STARTS[henge].lng),
+            title: henge
         });
     }
 
-    // get current URL, sans any filename
-    var url = window.location.href.substring(0, (window.location.href.lastIndexOf("/")) + 1);
-
-    // scatter passengers
-    for (var i = 0; i < PASSENGERS.length; i++)
-    {
-        // pick a random building
-        var building = BUILDINGS[Math.floor(Math.random() * BUILDINGS.length)];
-
-        // prepare placemark
-        //var placemark = earth.createPlacemark("");
-        //placemark.setName(PASSENGERS[i].name + " to " + PASSENGERS[i].house);
-
-        // prepare icon
-        /*
-        //var icon = earth.createIcon("");
-        icon.setHref(url + "/img/" + PASSENGERS[i].username + ".jpg");
-
-        // prepare style
-        var style = earth.createStyle("");
-        style.getIconStyle().setIcon(icon);
-        style.getIconStyle().setScale(4.0);
-
-        // prepare stylemap
-        var styleMap = earth.createStyleMap("");
-        styleMap.setNormalStyle(style);
-        styleMap.setHighlightStyle(style);
-
-        // associate stylemap with placemark
-        placemark.setStyleSelector(styleMap);
-
-        // prepare point
-        var point = earth.createPoint("");
-        point.setAltitudeMode(earth.ALTITUDE_RELATIVE_TO_GROUND);
-        point.setLatitude(building.lat);
-        point.setLongitude(building.lng);
-        point.setAltitude(0.0);
-
-        // associate placemark with point
-        placemark.setGeometry(point);
-
-        // add placemark to Earth
-        earth.getFeatures().appendChild(placemark);
-
-        */
-        // add marker to map
-        var marker = new google.maps.Marker({
-            icon: "https://maps.gstatic.com/intl/en_us/mapfiles/ms/micons/man.png",
-            map: map,
-            position: new google.maps.LatLng(building.lat, building.lng),
-            title: PASSENGERS[i].name + " at " + building.name
-        });
-
-        PASSENGERS[i]["marker"] = marker;
-        //PASSENGERS[i]["placemark"] = placemark;
-        
-    }
 }
 
 /**
