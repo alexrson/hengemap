@@ -487,6 +487,6 @@ function viewchange()
  */
 function unload()
 {
-    google.earth.removeEventListener(earth.getView(), "viewchange", viewchange);
-    google.earth.removeEventListener(earth, "frameend", frameend);
+    //google.earth.removeEventListener(earth.getView(), "viewchange", viewchange);
+    //google.earth.removeEventListener(earth, "frameend", frameend);
 }
