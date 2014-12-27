@@ -4,7 +4,6 @@ from collections import deque
 import matplotlib.pyplot as plt
 import numpy as np
 from operator import attrgetter
-import os
 import shapefile
 
 
@@ -41,6 +40,17 @@ def in_line(seg1, seg2):
                 return -1  # append seg2 to left
     return 0
 
+
+def write_segs(segs):
+    with open('cambridge_segments.tsv', 'w') as of:
+        of.write('angle\tx1\ty1\tx\ty2\tlength\n')
+        for slope_, p1, p2, length in segs:
+            p1 = list(p1)
+            p2 = list(p2)
+            angle = arctan(slope_)
+            of.write('\t'.join(map(str,[angle] + p1 + p2 + [length])) + '\n')
+
+
 def read_segs():
     segs = []
     with open('cambridge_segments.tsv') as fp:
@@ -56,12 +66,10 @@ def build_lines(segs=None):
     """
        This function has three nested while loops and uses deques. Lol.
     """
-    if not segs:
-        segs = read_segs()
+    segs = segs or read_segs()
     lines = []  # list of deque of segs
     while segs:
-        starting_piece = segs.pop(0)
-        deq = deque([starting_piece])
+        deq = deque([segs.pop(0)])
         line_changed = True
         while line_changed:
             i = 0
@@ -88,12 +96,10 @@ def write_lines(lines):
     with open('lines.txt', 'w') as of:
         for line_i, line in enumerate(lines):
             length = sum([s.length for s in line])
-            if length < 400:
-                continue
             of.write('LINE: %i\t%f\n' % (line_i, length))
             for seg in line:
-                of.write('\t%f\t%f\t%f\t%f\n' %
-                         (seg.p1[0], seg.p1[1], seg.p2[0], seg.p2[1]))
+                of.write('\t'.join(
+                    [seg.p1[0], seg.p1[1], seg.p2[0], seg.p2[1]]) + '\n')
 
 
 def simpleaxis(sp):
@@ -117,10 +123,8 @@ def euclidean_dist(point1, point2):
 def analyze_shapefile(in_file):
     """ as """
     shp = open(in_file, 'rb')
-    projection_file = in_file[:-4]+ '.prj'
     dbf_file = in_file[:-4]+ '.dbf'
     dbf = open(dbf_file, 'rb')
-    assert os.path.exists(projection_file)
     sf = shapefile.Reader(shp=shp, dbf=dbf)
     fig1 = plt.figure()
     sp = fig1.add_subplot(1, 1, 1)
@@ -135,17 +139,10 @@ def analyze_shapefile(in_file):
             color = (0.9, 0.9, 0.9)
             sp.plot(zip(point1, point2)[0],
                     zip(point1, point2)[1],
-                    linestyle='-.',
                     marker=None,
                     color=color)
     segs = sorted(segs, key=attrgetter('angle'))
-    with open('cambridge_segments.tsv', 'w') as of:
-        of.write('angle\tx1\ty1\tx\ty2\tlength\n')
-        for slope_, p1, p2, length in segs:
-            p1 = list(p1)
-            p2 = list(p2)
-            angle = arctan(slope_)
-            of.write('\t'.join(map(str,[angle] + p1 + p2 + [length])) + '\n')
+    write_segs(segs)
     lines = build_lines(segs)
     for line_i, line in enumerate(lines):
         color = colors[line_i % len(colors)]
