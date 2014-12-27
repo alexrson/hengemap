@@ -1,3 +1,7 @@
+Henge Map
+=========
+![banner](https://raw.githubusercontent.com/tonyblum/henges/master/banner.png)
+
 URLs of interest
 ================
 
@@ -10,3 +14,4 @@ The best free program for viewing I've found so far is QGIS http://www.kyngchaos
 
 latitude and Longitude of a Point
 http://itouchmap.com/latlong.html
+
