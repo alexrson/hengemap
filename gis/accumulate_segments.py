@@ -1,12 +1,99 @@
 import argparse
-import numpy as np
-import shapefile
-import os
+from collections import namedtuple
+from collections import deque
 import matplotlib.pyplot as plt
+import numpy as np
+from operator import attrgetter
+import os
+import shapefile
 
-"""
-+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs
-"""
+
+ANGLE_THRESH = 4.  # Degrees
+D_THRESH = 6.  # Lambert_Conformal_Conic (I literally can't even...)
+MIN_LEN = 600
+colors = [plt.cm.jet(i/8.) for i in range(9)]
+Seg = namedtuple('Seg', ['angle','p1','p2','length'])
+
+
+def arctan(slope_):
+    if slope_:
+        angle = np.arctan(slope_) * 57.2957795
+    else:
+        angle = -90
+    return angle
+
+
+def in_line(seg1, seg2):
+    if abs(seg1.angle - seg2.angle) > ANGLE_THRESH:
+        return 0
+    d_thresh = 3.
+    pairs = [
+        (seg1.p1, seg2.p1),
+        (seg1.p1, seg2.p2),
+        (seg1.p2, seg2.p1),
+        (seg1.p2, seg2.p2),
+    ]
+    for pair_i, pair in enumerate(pairs):
+        if euclidean_dist(*pair) < d_thresh:
+            if pair_i in [0, 1]:
+                return 1  # append seg2 to right
+            else:
+                return -1  # append seg2 to left
+    return 0
+
+def read_segs():
+    segs = []
+    with open('cambridge_segments.tsv') as fp:
+        for line in fp:
+            if line.startswith('an'):
+                continue
+            angle, x1, y1, x2, y2, length = map(float, line.split())
+            segs.append(Seg(angle, (x1, y1), (x2, y2), length))
+    return segs
+
+
+def build_lines(segs=None):
+    """
+       This function has three nested while loops and uses deques. Lol.
+    """
+    if not segs:
+        segs = read_segs()
+    lines = []  # list of deque of segs
+    while segs:
+        starting_piece = segs.pop(0)
+        deq = deque([starting_piece])
+        line_changed = True
+        while line_changed:
+            i = 0
+            line_changed = False
+            while len(segs) > i and segs[i].angle - deq[-1].angle < ANGLE_THRESH:
+                match1 = in_line(deq[0], segs[i])
+                match2 = in_line(deq[-1], segs[i])
+                if match1 or match2:
+                    line_changed = True
+                    if match1 == -1 or match2 == -1:
+                        deq.appendleft(segs.pop(i))
+                    elif match1 == 1 or match2 == 1:
+                        deq.append(segs.pop(i))
+                else:
+                    i += 1
+        length = sum([s.length for s in deq])
+        if length > MIN_LEN:
+            lines.append(deq)
+    write_lines(lines)
+    return lines
+
+
+def write_lines(lines):
+    with open('lines.txt', 'w') as of:
+        for line_i, line in enumerate(lines):
+            length = sum([s.length for s in line])
+            if length < 400:
+                continue
+            of.write('LINE: %i\t%f\n' % (line_i, length))
+            for seg in line:
+                of.write('\t%f\t%f\t%f\t%f\n' %
+                         (seg.p1[0], seg.p1[1], seg.p2[0], seg.p2[1]))
 
 
 def simpleaxis(sp):
@@ -22,8 +109,10 @@ def slope(point1, point2):
     else:
         return None
 
+
 def euclidean_dist(point1, point2):
     return ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5
+
 
 def analyze_shapefile(in_file):
     """ as """
@@ -36,60 +125,37 @@ def analyze_shapefile(in_file):
     fig1 = plt.figure()
     sp = fig1.add_subplot(1, 1, 1)
     simpleaxis(sp)
-    point1_point2Tolen = {}
-    all_lens = []
-    min_len = 5
-    for si,s in enumerate(sf.shapes()):
-        for point1, point2 in zip(s.points, s.points[1:]):
-            seg_len = euclidean_dist(point1, point2)
-            if seg_len > min_len:
-                all_lens.append(euclidean_dist(point1, point2))
-    all_lens = sorted(all_lens)
-    slope_points_len = []
-    for si,s in enumerate(sf.shapes()):
+    segs = []
+    for si, s in enumerate(sf.shapes()):
         for point1, point2 in zip(s.points, s.points[1:]):
             seg_len = euclidean_dist(point1, point2)
             _slope = slope(point1, point2)
-            slope_points_len.append((_slope, point1, point2, seg_len))
-            if seg_len > min_len:
-                norm_len = (1.0 * all_lens.index(seg_len) / len(all_lens)) **4.
-                point1_point2Tolen[(point1, point2)] = seg_len
-                color = (0.8 + 0.2*norm_len,0.8-0.8*norm_len,0.8-0.8*norm_len)
-                color = 'bgry'[si % 4]
-                sp.plot(zip(point1, point2)[0],
-                        zip(point1, point2)[1],
-                        marker=None,
-                        color=color)
-            else:
-                sp.plot(zip(point1, point2)[0],
-                        zip(point1, point2)[1],
-                        color=(0.8,0.8,0.8))
-    slope_points_len = sorted(slope_points_len)
-    fig1.savefig('map.pdf')
-    fig2 = plt.figure()
-    sp = fig2.add_subplot(1,1,1)
-    simpleaxis(sp)
-    slopes = zip(*slope_points_len)[0]
-    slopes = filter(None, slopes)
-    angles = map(np.arctan, slopes)
-    n, bins = np.histogram(angles, bins=90)
-    sp.bar(bins[1:], n, width=bins[1]-bins[0],facecolor='#2CB4AC', edgecolor='#2CB4AC')
-    sp.set_xlim([-3.14/2,3.14/2])
-    sp.set_xticks([-1.57, 0, 1.57])
-    sp.set_xticklabels([-45,0,45])
-    fig2.savefig('angle_hist.png')
+            angle = arctan(_slope)
+            segs.append(Seg(angle, point1, point2, seg_len))
+            color = (0.9, 0.9, 0.9)
+            sp.plot(zip(point1, point2)[0],
+                    zip(point1, point2)[1],
+                    linestyle='-.',
+                    marker=None,
+                    color=color)
+    segs = sorted(segs, key=attrgetter('angle'))
     with open('cambridge_segments.tsv', 'w') as of:
         of.write('angle\tx1\ty1\tx\ty2\tlength\n')
-        for slope_, p1, p2, length in slope_points_len:
+        for slope_, p1, p2, length in segs:
             p1 = list(p1)
             p2 = list(p2)
-            if slope_:
-                angle = np.arctan(slope_) * 57.2957795
-            else:
-                angle = -90
+            angle = arctan(slope_)
             of.write('\t'.join(map(str,[angle] + p1 + p2 + [length])) + '\n')
-
-
+    lines = build_lines(segs)
+    for line_i, line in enumerate(lines):
+        color = colors[line_i % len(colors)]
+        for seg in line:
+            sp.plot([seg.p1[0], seg.p2[0]],
+                    [seg.p1[1], seg.p2[1]],
+                    marker=None,
+                    color=color)
+    sp.set_title('Henges of Cambridge, MA')
+    fig1.savefig('map.pdf')
 
 
 def main():
